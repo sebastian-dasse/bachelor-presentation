@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Evaluation of Scala.js for Interactive Web Surfaces</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<!-- <h1>Reveal.js</h1> -->
+					<h1>Evaluation of Scala.js</h1>
+					<h3>for Interactive Web Surfaces</h3>
+					<p>
+						<small>By Sebastian Dass&eacute;</small>
+					</p>
+				</section>
+
+				<section>
+					<h2>Motivation</h2>
+					<ul>
+						<li>90% of all websites use JavaScript</li>
+						<li class="fragment">
+							problem: JavaScript is flawed
+							<ul>
+								<li>has many inconsinstencies and bad surprises</li>
+								<li>many established programming concepts are unspecified (e.g. classes, modules, constants)</li>
+								<li>dynamic typing leads to runtime errors and makes refactoring hard</li>
+							</ul>
+						</li>
+						<li class="fragment">solution: use a different language and compile to JavaScript</li>
+					</ul>
+					<aside class="notes">
+						<ul>
+							<li>inconsistencies</li>
+								<ul>
+									<li>typeof {} // "object"</li>
+									<li>typeof [] // "object"</li>
+								</ul>
+							<li>
+								<pre><code class="hljs" data-trim contenteditable>
+var i = 123;
+for (var i = 0; i < 10; i++) { /**/ }
+console.log(i);  // --> 10
+								</code></pre>
+							</li>
+							<li>classes ...</li>
+							<li></li>
+						</ul>
+					</aside>
+				</section>
+
+				<section>
+					<h2>Scala.js</h2>
+					<ul>
+						<li>is a Scala to JavaScript compiler</li>
+						<li>developed mainly by Sébastien Doeraene at EPFL, on suggestion of Martin Odersky (inventor of Scala)</li>
+						<li>first presented in June 2013</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Objective</h2>
+					<p>evaluate the usefulness of Scala.js for developing web surfaces</p>
+					<ul class="fragment">
+						<li>How does it work?</li>
+						<li>How to configure a Scala.js project?</li>
+						<li>How comfortable is it to work with Scala.js?</li>
+						<li>Is it possible to implement common requirements of web development?</li>
+						<li>What are the effects on code quality?</li>
+						<li>How is the performance?</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<h2>Scala.js overview</h2>
+					</section>
+				  <section>
+				  	<h3>Compilation and Optimization Pipeline</h3>
+				  	<img width="60%" src="images/Doeraene2014-Scalajs-p17.jpg">
+				  	<ul>
+				  		<li>fastOptJS for development</li>
+				  		<li>fullOptJS for production</li>
+				  	</ul>
+				  	<aside class="notes">
+				  		<ol>
+				  			<li>comilation: compiler generates intermediate bytecode (.sjir)</li>
+				  			<li>linking: .sjir files are linked together with all transitive dependencies; at this point the complete code including all used library code is known to Scala.js which allows for heavy optimizations</li>
+				  			<li>optimization:
+				  				<ul>
+				  					<li>fastOptJS: Scala.js optimizer optimizes mostly for performance --  fast -- for development</li>
+							      <li>fullOptJS: additionally the Google Closure Compiler is used to optimize for file size --  slow -- for production</li>
+				  				</ul>
+				  			</li>
+				  		</ol>
+    				</aside>
+			  	</section>
+				  <section>
+				  	<h3>Stability</h3>
+				  	<ul>
+				  		<li>backwards compatibility guaranteed since version 0.6.0 (Feb 2015)</li>
+				  		<li>test suite with 400 tests (as of Jul 2014)</li>
+				  	</ul>
+			  	</section>
+				  <section>
+				  	<h3>Scala Support</h3>
+				  	<ul>
+				  		<li>full support of Scala standard library</li>
+				  		<li>some differences from Scala semantics (owed to a better performance)</li>
+				  		<li>only partial support of Java standard library</li>
+				  	</ul>
+				  	<aside class="notes">
+				  		<ul>
+				  			<li>
+				  				differences from Scala semantics
+				  				<ul>
+				  					<li>primitive types (toString, runtime-based type tests</li>
+				  					<li>some runtime errors are treated as undefined behavior</li>
+				  				</ul>
+				  			</li>
+				  		</ul>
+			  		</aside>
+			  	</section>
+				  <section>
+				  	<h3>JavaScript Interoperability</h3>
+				  	<div data-markdown>
+							<script type="text/template">
+								* JavaScript can be called from Scala.js using facade types
+								```javascript
+								// JavaScript class
+								var Foo = function() {
+									return {
+										bar: function(x) { return x * x; },
+										baz: "ping"
+									};
+								};
+								```
+								```scala
+								// Scala.js facade
+								@js.native
+								class Foo extends js.Object {
+									def bar(x: Double): Double = js.native
+									val baz: String = js.native
+								}
+								```
+								* Scala.js can be exported to JavaScript using annotations (`@JSExport`)
+							</script>
+						</div>
+			  	</section>
+				  <section>
+				  	<h3>Documentation</h3>
+				  		<ul>
+				  			<li>
+				  			well documented on the website <a href="http://www.scala-js.org">scala-js.org</a> (still in flux)</li>
+				  			<ul>
+					      	<li>API documentation (a bit sparse at times)</li>
+					      	<li>tutorial</li>
+					      	<li>video presentations</li>
+				  			</ul>
+					    	<li>good e-book <a href="http://lihaoyi.github.io/hands-on-scala-js">Hands-on Scala.js</a></li>
+			      		<li>online scratchpad (<a href="http://www.scala-js-fiddle.com">Scala-Js-Fiddle</a>)</li>
+				  		</ul>
+			  	</section>
+				  <!-- <section>
+				  	<h3>Ecosystem</h3>
+				  	 <ul>
+				  	 	<li>facades for common JavaScript libraries and frameworks (DOM, jQuery, AngularJS, ...)</li>
+				  	 	<li>compatible Scala libraries (functional, serialization, client-server communication, reactive programming, ...)</li>
+				  	 	<li>test libraries</li>
+				  	 	<li>project skeletons</li>
+				  	 </ul>
+			  	</section> -->
+				</section>
+
+				<section>
+					<h2>Case Studies</h2>
+					<p>based on small prototypical implementations</p>
+				</section>
+
+				<section>
+					<section>
+						<h2>Hello World</h2>
+						<div data-markdown>
+							<script type="text/template">
+								```scala
+								package hello
+
+								import scala.scalajs.js.JSApp
+
+								object HelloApp extends JSApp {
+									def main(): Unit = {
+										println("Hello world!")
+									}
+								}
+								```
+							</script>
+						</div>
+					</section>
+					<section>
+						<h3><a href="https://github.com/lihaoyi/workbench">Workbench</a> plugin</h3>
+						<ul>
+						  <li>automatically updates the browser when code changes are saved</li>
+						  <li>transfers compiler output to the browser console</li>
+						</ul>
+					</section>
+
+					<section>
+						<h3>Debugging with Source Maps</h3>
+						<ul>
+							<li>
+					  		Scala.js supports Source Maps, so it is possible to navigate from the stack trace (error log) to the error source in the source code
+							</li>
+						</ul>
+						<img width="80%" src="images/sourcemaps3-smart-stacktrace.jpg">
+						<img width="40%" src="images/sourcemaps4-legible-code.jpg">
+					</section>
+
+					<section>
+						<h3>Build performance</h3>
+						<ul>
+							<li>
+								build times
+								<ul>
+							  	<li>10 seconds for the first build</li>
+							  	<li> 2 seconds since second build without clean (thanks to incremental compilation)</li>
+								</ul>
+							</li>
+						<li>file size</li>
+						  <ul>
+						  	<li>20 kB in Scala.js (vs 187 B in pure HTML/JavaScript)</li>
+						  </ul>
+						</ul>
+					</section>
+					<section>
+						<h3>Writing unit tests</h3>
+						<div data-markdown>
+							<script type="text/template">
+							with [uTest](https://github.com/lihaoyi/utest)
+
+							* set of assertions, that can be used in test suites:
+							```scala
+							assert(1 + 1 == 2)                            // true
+							assertMatch(List(1, 2, 3)){ case 1 :: _ => }  // true
+							intercept[NoSuchElementException](Nil.head)   // true
+							compileError("val x: Int = 1.2")              // true
+							```
+							* tests are quite slow: 19 s for 7 tests with 25 assertions
+							* can be used in continuous mode (`~test`)
+							</script>
+						<ul>
+							<li>
+								set of assertions, that can be used in test suites
+							</li>
+							<li>tests are quite slow: 19 s for 7 tests with 25 assertions</li>
+							<li>can be used in continuous mode:</li>
+						</ul>
+						</div>
+					</section>
+					<section>
+						<h3>HTML templating with <a href="https://github.com/lihaoyi/scalatags">Scalatags</a></h3>
+						<div data-markdown>
+							<script type="text/template">
+								* type safe, declarative templating
+								```scala
+								document.body.appendChild(
+									div(id:="my-div", cls:="my-class", color:="red",
+										h1("hello"),
+										p("lorem ipsum"),
+										button(cls:="input-btn",
+											"Click me!",
+											onclick:={ () => doSth() }
+										)
+									).render
+								)
+								```
+								* allows the use of control flow statements (`if`/`else`, `for`)
+							</script>
+						</div>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Canvas, Timer, Events</h2>
+						<a href="case_studies/canvas-frenzy/classes/index.html">Canvas Frenzy</a>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Currency converter</h2>
+						<a href="case_studies/currency-converter/classes/index.html">
+							<img width="100%" src="images/currency-converter.jpg">
+						</a>
+						<ul>
+							<li>simple web UI</li>
+							<li>requests the exchange rate from Yahoo! Finance API</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Ajax</h3>
+						<ul>
+							<li>
+								XMLHttpRequest (JS) can be used
+								<div data-markdown>
+									<script type="text/template">
+										```scala
+										val xhr = new dom.XMLHttpRequest()
+										xhr.open("GET", url)
+										xhr.onload = (e: dom.Event) => {
+										  if (xhr.status == 200) {
+										    handleXhrResponse(xhr)
+										  }
+										}
+										xhr.send()
+										```
+							</script>
+						    </div>
+							</li>
+							<li class="fragment">
+								more convenience with futures
+								<div data-markdown>
+									<script type="text/template">
+										```scala
+										Ajax.get(url).onSuccess{ case xhr =>
+											handleXhrResponse(xhr)
+										}
+
+										```
+						      </script>
+						    </div>
+							</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Cross-compiling Library</h2>
+						<ul>
+							<li>implemented statistical functions: mean, median, variance, standard deviation</li>
+					    <li>one single, shared implementation</li>
+					    <li>platform-specific facades</li>
+					    <li>unit tests for shared code and facades</li>
+					    <li>simple web UI</li>
+
+					    <a href="case_studies/statistics-lib/classes/index.html">
+					    	<img width="70%" src="images/statistics-gui.jpg">
+					    </a>
+						</ul>
+					</section>
+					<section>
+						<h3>Code quality in Scala.js</h3>
+						<ul>
+							<li>noticeably less code (fewer helper methods necessary)</li>
+							<li>functional programming, but still fast</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Runtime performance Benchmark</h3>
+						<ul>
+							<li><a href="case_studies/benchmark-statistics-libs/test/benchmark-statistics-lib.html">benchmark</a> using JSLitmus</li>
+							<li>runtime performance of Scala.js very close to pure JavaScript code</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Conclusion</h2>
+					</section>
+					<section>
+						<h3>Pro</h3>
+						<ul>
+					    <li>good IDE support (IntelliJ, Eclipse, ...)</li>
+					    <li>good JavaScript interoperability</li>
+					    <li>readable, reusable code is easier to write</li>
+					    <li>runtime performance almost on the same level as JavaScript</li>
+					    <li>Scala in the browser</li>
+					    <li>cross-compiling projects with shared code</li>
+					    <li>Scala as single language for client and server</li>
+					    <li>enthusiastic developer community</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Contra</h3>
+						<ul>
+					    <li>established Scala/Java test libraries (JUnit, ScalaTest) not usable</li>
+					    <li>tests with uTest are slow</li>
+					    <li>compiled JavaScript files are still rather big</li>
+					    <li>many libraries still experimental</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Outlook</h3>
+				  	<ul>
+					    <li>planned improvements of Scala.js:
+					    	<ul>
+						      <li>further performance boost</li>
+						      <li>a compiler in the browser</li>
+						      <li>working implementation of the Akka actor model</li>
+					    	</ul>
+				    	</li>
+					    <li>success will largely depend on the success of the language Scala</li>
+				  	</ul>
+					</section>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

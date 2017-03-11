@@ -10,7 +10,7 @@ Simply download a copy of this repository and open the index.html file directly 
 
 ## Full setup
 
-You can also run the presentation from a local web server. The following instructions will set up such a server as well as all of the development tasks needed to make edits to the reveal.js source code.
+You can also run the presentation from a local web server, which can be set up through the following instructions.
 
 1. Install [Node.js](http://nodejs.org/)
 
